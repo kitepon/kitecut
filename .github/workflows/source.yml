@@ -1,0 +1,24 @@
+name: 公開ソースの検証
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source:
+    name: ソース復元・同梱物
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: 公開ファイルからソースを復元
+        run: node scripts/check-source.mjs
+

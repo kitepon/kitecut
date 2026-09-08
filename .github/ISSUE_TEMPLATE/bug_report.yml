@@ -1,0 +1,33 @@
+name: 不具合の報告
+description: 再現手順と利用環境を添えて、動作の問題を報告します。
+title: "[不具合] "
+body:
+  - type: markdown
+    attributes:
+      value: "認証情報や個人の制作素材は貼らないでください。セキュリティの問題はSECURITY.mdの非公開報告を利用してください。"
+  - type: textarea
+    id: steps
+    attributes:
+      label: 再現手順
+      description: どの操作で、何が起きましたか。
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待した動作と実際の動作
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: 利用環境
+      description: Windowsの版、GPUとVRAM、KiteCutの版またはコミットを記入してください。
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: エラー・補足
+      description: 秘密を除いたログや、公開できる再現用ファイルがあれば添付してください。
+

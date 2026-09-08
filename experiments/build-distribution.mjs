@@ -6,8 +6,8 @@ const outputRoot=path.join(root,'.work/distribution-output');await mkdir(outputR
 const destination=await mkdtemp(path.join(outputRoot,`kitecut-${version}-`));
 const files=['README.md','LICENSE','THIRD_PARTY_NOTICES.md','Start-Editor.ps1','experiments/frontstage.json','experiments/open-editor.mjs','experiments/prepare-editor-update.mjs','experiments/update-editor-source.py','experiments/prepare-dependencies.ps1','experiments/prepare-adopted-models.py','experiments/generation-service.mjs','experiments/speech-runtime.mjs','experiments/speech-adoption.json','experiments/mcp-client.mjs','experiments/video-understanding/adoption.json','artifacts/local-speech-bridge/narration.wav'];
 async function include(directory){for(const entry of await readdir(directory,{withFileTypes:true})){const file=directory+'/'+entry.name;if(entry.isDirectory())await include(file);else files.push(file);}}
-for(const directory of ['experiments/fonts','experiments/patches','distribution/requirements','distribution/licenses'])await include(directory);
-files.push('distribution/components.json','distribution/dependencies.json','experiments/build-distribution.mjs','CONTRIBUTING.md','.gitignore','.gitattributes');
+for(const directory of ['experiments/fonts','experiments/patches','distribution/requirements','distribution/licenses','docs','.github','scripts'])await include(directory);
+files.push('distribution/components.json','distribution/dependencies.json','experiments/build-distribution.mjs','CONTRIBUTING.md','AGENTS.md','SECURITY.md','CHANGELOG.md','.gitignore','.gitattributes');
 const entries=[];
 for(const file of files){const target=path.join(destination,file);await mkdir(path.dirname(target),{recursive:true});await copyFile(file,target);const data=await readFile(target);entries.push({path:file,bytes:data.length,sha256:createHash('sha256').update(data).digest('hex')});}
 const adopted=JSON.parse(await readFile('experiments/frontstage.json','utf8'));

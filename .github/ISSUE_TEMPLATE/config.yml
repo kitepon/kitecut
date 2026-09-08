@@ -1,0 +1,6 @@
+blank_issues_enabled: true
+contact_links:
+  - name: セキュリティの非公開報告
+    url: https://github.com/kitepon/kitecut/security/advisories/new
+    about: 認証や権限に関わる問題はこちらから報告してください。
+

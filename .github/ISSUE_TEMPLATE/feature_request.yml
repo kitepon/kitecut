@@ -1,0 +1,17 @@
+name: 機能の提案
+description: 実現したい編集や、今困っていることを教えてください。
+title: "[提案] "
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: どんな編集をしたいですか
+      description: 現在の操作で困っていることと、実現したい結果を書いてください。
+    validations:
+      required: true
+  - type: textarea
+    id: approach
+    attributes:
+      label: 操作の案・参考例
+      description: 具体的な案や参考があれば記入してください。
+
