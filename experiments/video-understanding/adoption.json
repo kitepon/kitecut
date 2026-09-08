@@ -1,0 +1,23 @@
+{
+  "schema": "movie.video-understanding-adoption.v1",
+  "decided_at": "2026-09-06",
+  "selected_model": "videochat3",
+  "model": {
+    "repository": "MCG-NJU/VideoChat3-4B",
+    "revision": "37fa901ec5913f84bc31108ebc1e60ad1903634c",
+    "evidence": "experiments/video-understanding/runs/20260906-final-answer-videochat3/run.json"
+  },
+  "official_code": {
+    "repository": "MCG-NJU/VideoChat3",
+    "observed_revision": "6fa1ea995551c74e2da29237e23f0123f20aa3c4",
+    "observed_at": "2026-09-06",
+    "role": "公式推論例・依存・新しいモデルの公開案内を確認する基準。アプリへの導入済み版を意味しない"
+  },
+  "windows_adapter": "experiments/video-understanding/videochat3_sdpa.py",
+  "comparison_status": "追加のモデル選定調査は終了",
+  "application_status": "場面検索・共通タイムライン配置・GUI修正を実装し、この端末へ導入済み。構成表・完成CMの評価への継続接続はLatticeで管理する",
+  "editing_dependencies": "experiments/video-understanding/requirements-editing.txt",
+  "application_evidence": "docs/evidence/2026-09-06-video-scene-search.md",
+  "decision": "動画理解をVideoChat3に一本化する。素材や完成動画の評価だけに用途を限定せず、編集中の場面選択・時間関係の把握・編集判断に用いる。Qwenとの用途別切替は設けない。",
+  "update_policy": "公式のモデル版とGitHubのコード版を確認し、変更内容とWindows調整への影響を確認する。対応する重み・processor・独自コード・依存を一組として導入し、変更に関係する動画入力の動作・時間・外部正解との一致を確認後に採用版を更新する。"
+}

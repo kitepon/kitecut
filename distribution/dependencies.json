@@ -1,0 +1,26 @@
+{
+  "python": "3.12",
+  "pnpm": "10.33.0",
+  "torchIndex": "https://download.pytorch.org/whl/cu128",
+  "environments": [
+    {"name":"video","path":".work/video-understanding/venv-videochat3","torch":["torch==2.11.0","torchvision==0.26.0"]},
+    {"name":"speech","path":".work/qwen-speech/venv","torch":["torch==2.11.0","torchaudio==2.11.0"]},
+    {"name":"tracking","path":".work/motion-tracking/venv","torch":[]}
+  ],
+  "comfy": {
+    "version":"v0.34.0",
+    "portableUrl":"https://github.com/Comfy-Org/ComfyUI/releases/download/v0.34.0/ComfyUI_windows_portable_nvidia.7z",
+    "sha256":"ed57cc6b19ae3d83add1ecebfdd56b25e04e0008cf0fe9af43a4ad8797e2a24c",
+    "path":".work/comfyui/ComfyUI_windows_portable",
+    "endpoint":"http://127.0.0.1:8188"
+  },
+  "nemo": {
+    "url":"https://github.com/VOICEVOX/voicevox_nemo_engine/releases/download/0.24.0/voicevox_engine-windows-cpu-0.24.0.7z.001",
+    "sha256":"0c48d0139c12a52aef6e9d96150b09e70761b3f0bea8fd88c726bf5ce7aa249b",
+    "path":".work/japanese-speech/nemo-engine"
+  },
+  "comfyModels": [
+    {"repository":"Comfy-Org/Mage-Flow","revision":"f46772415dd30c3def49a0b2807af2bf781ff96d","files":["diffusion_models/mage_flow_bf16.safetensors","text_encoders/qwen3vl_4b_bf16.safetensors","vae/mage_flow_vae_bf16.safetensors"]},
+    {"repository":"Comfy-Org/Wan_2.2_ComfyUI_Repackaged","revision":"c4f60d30c55a624e35427060fdd217579a6c1d77","prefix":"split_files/","files":["diffusion_models/wan2.2_ti2v_5B_fp16.safetensors","text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors","vae/wan2.2_vae.safetensors"]}
+  ]
+}

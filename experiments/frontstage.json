@@ -1,0 +1,8 @@
+{
+  "repository": "https://github.com/x777/frontstage.git",
+  "revision": "2358fc814822f7a55f9903bf595f0dca140c9d2e",
+  "workspace": ".work/frontstage",
+  "patches": ["experiments/patches/audio-track-detection.patch", "experiments/patches/mcp-video-export.patch"],
+  "license": "GPL-3.0",
+  "purpose": "動画編集アプリの採用基盤。人と操作者AIが共通の編集状態・履歴・保存結果を使う。改変ソースをGPL-3.0で提供し、依存とモデルは公式配布元から導入する。"
+}

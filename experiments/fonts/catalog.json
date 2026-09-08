@@ -1,0 +1,343 @@
+{
+  "license": "OFL-1.1",
+  "fonts": [
+    {
+      "family": "Dela Gothic One",
+      "package": "@fontsource/dela-gothic-one",
+      "category": "見出し・極太",
+      "files": [
+        "DelaGothicOne-Regular.ttf"
+      ],
+      "source": "https://api.github.com/repos/google/fonts/contents/ofl/delagothicone",
+      "license": "dela-gothic-one-OFL.txt",
+      "sha256": {
+        "DelaGothicOne-Regular.ttf": "4ff87a0965f1b0505e5a2c58424bc6ad3cff27e56a82f21c2fc9d6b0e3857ee2"
+      }
+    },
+    {
+      "family": "Noto Sans JP",
+      "package": "@fontsource/noto-sans-jp",
+      "category": "字幕・ゴシック",
+      "files": [
+        "NotoSansJP[wght].ttf"
+      ],
+      "source": "https://api.github.com/repos/google/fonts/contents/ofl/notosansjp",
+      "license": "noto-sans-jp-OFL.txt",
+      "sha256": {
+        "NotoSansJP[wght].ttf": "c2f3b4d463500a2ddcd3849cded1fceeb9fd6d1c32e6cbecd568453ba50fc68f"
+      }
+    },
+    {
+      "family": "Noto Serif JP",
+      "package": "@fontsource/noto-serif-jp",
+      "category": "明朝",
+      "files": [
+        "NotoSerifJP[wght].ttf"
+      ],
+      "source": "https://api.github.com/repos/google/fonts/contents/ofl/notoserifjp",
+      "license": "noto-serif-jp-OFL.txt",
+      "sha256": {
+        "NotoSerifJP[wght].ttf": "2fd527ba12b6a44ec30d796d633360da0aeba6c5d4af1304ce12bb4dc15a7dfc"
+      }
+    },
+    {
+      "family": "Zen Kaku Gothic New",
+      "package": "@fontsource/zen-kaku-gothic-new",
+      "category": "見出し・角ゴシック",
+      "files": [
+        "ZenKakuGothicNew-Bold.ttf",
+        "ZenKakuGothicNew-Regular.ttf"
+      ],
+      "source": "https://api.github.com/repos/google/fonts/contents/ofl/zenkakugothicnew",
+      "license": "zen-kaku-gothic-new-OFL.txt",
+      "sha256": {
+        "ZenKakuGothicNew-Bold.ttf": "0081cedabc4921982fcd061f845a005664ac7fb642af2dd34b4007bc63ccd235",
+        "ZenKakuGothicNew-Regular.ttf": "b840cd07a67d89cacca44249ae49aa99ee7640eb5ce623be8d8983d6aabac801"
+      }
+    },
+    {
+      "family": "Zen Old Mincho",
+      "package": "@fontsource/zen-old-mincho",
+      "category": "古典的な明朝",
+      "files": [
+        "ZenOldMincho-Bold.ttf",
+        "ZenOldMincho-Regular.ttf",
+        "ZenOldMincho-SemiBold.ttf"
+      ],
+      "source": "https://api.github.com/repos/google/fonts/contents/ofl/zenoldmincho",
+      "license": "zen-old-mincho-OFL.txt",
+      "sha256": {
+        "ZenOldMincho-Bold.ttf": "d6b95c1ff45c8dac153d28961e4c37d7d03b648330c71f884d124dc652a13c0d",
+        "ZenOldMincho-Regular.ttf": "4c051a78a21c4e8e9dccf1c754776d33f356b8cc6ef95d9b64761b9bae814b84",
+        "ZenOldMincho-SemiBold.ttf": "d98b9783652081f7f9e662b0568bddeaf6462962dd39edf68781268eb60ea3a0"
+      }
+    },
+    {
+      "family": "Zen Maru Gothic",
+      "package": "@fontsource/zen-maru-gothic",
+      "category": "丸ゴシック",
+      "files": [
+        "ZenMaruGothic-Bold.ttf",
+        "ZenMaruGothic-Regular.ttf"
+      ],
+      "source": "https://api.github.com/repos/google/fonts/contents/ofl/zenmarugothic",
+      "license": "zen-maru-gothic-OFL.txt",
+      "sha256": {
+        "ZenMaruGothic-Bold.ttf": "fe24426b9c8b5523a0146a8235c8674eccf0493af354a53ec895c3596d9eb745",
+        "ZenMaruGothic-Regular.ttf": "a0c0b53543e0993ae2225e629c833f3d51495ad31720694ff112ce4ce11111ef"
+      }
+    },
+    {
+      "family": "Kaisei Tokumin",
+      "package": "@fontsource/kaisei-tokumin",
+      "category": "装飾的な明朝",
+      "files": [
+        "KaiseiTokumin-Bold.ttf",
+        "KaiseiTokumin-ExtraBold.ttf",
+        "KaiseiTokumin-Regular.ttf"
+      ],
+      "source": "https://api.github.com/repos/google/fonts/contents/ofl/kaiseitokumin",
+      "license": "kaisei-tokumin-OFL.txt",
+      "sha256": {
+        "KaiseiTokumin-Bold.ttf": "4540f6b5c32724acc9c4ba77692195078de43a4ee762d436e39d32fa8d1a73c9",
+        "KaiseiTokumin-ExtraBold.ttf": "bf44bb3e23cc703bfb19111833f78e651998d0a2b1863eff9e88cecb38a8bc53",
+        "KaiseiTokumin-Regular.ttf": "3fbdbec539369aed11bb1fa0cdda1d19ea246e795107357383dfa561848a427d"
+      }
+    },
+    {
+      "family": "Yusei Magic",
+      "package": "@fontsource/yusei-magic",
+      "category": "手書き",
+      "files": [
+        "YuseiMagic-Regular.ttf"
+      ],
+      "source": "https://api.github.com/repos/google/fonts/contents/ofl/yuseimagic",
+      "license": "yusei-magic-OFL.txt",
+      "sha256": {
+        "YuseiMagic-Regular.ttf": "82098615f39ed9da6a8ccc674b9006e49c70dd5b775a7a1697f6bedd22ce25a2"
+      }
+    },
+    {
+      "family": "Klee One",
+      "package": "@fontsource/klee-one",
+      "category": "手書き・細字",
+      "files": [
+        "KleeOne-Regular.ttf",
+        "KleeOne-SemiBold.ttf"
+      ],
+      "source": "https://api.github.com/repos/google/fonts/contents/ofl/kleeone",
+      "license": "klee-one-OFL.txt",
+      "sha256": {
+        "KleeOne-Regular.ttf": "bf4063f030cc2ae6adf0a11424a1888e5c0eb4438f1f6d02f52294af868e9b3a",
+        "KleeOne-SemiBold.ttf": "b031ec426c23ca1143ef1f7d58bee7a79efe119ed654152f121c922202b303fd"
+      }
+    },
+    {
+      "family": "Reggae One",
+      "package": "@fontsource/reggae-one",
+      "category": "個性的な見出し",
+      "files": [
+        "ReggaeOne-Regular.ttf"
+      ],
+      "source": "https://api.github.com/repos/google/fonts/contents/ofl/reggaeone",
+      "license": "reggae-one-OFL.txt",
+      "sha256": {
+        "ReggaeOne-Regular.ttf": "aebe62598732d76036f30ec11bb0ec5f68938e373a06d1b4ceb6b9cf1abf3db2"
+      }
+    },
+    {
+      "family": "RocknRoll One",
+      "package": "@fontsource/rocknroll-one",
+      "category": "ポップ",
+      "files": [
+        "RocknRollOne-Regular.ttf"
+      ],
+      "source": "https://api.github.com/repos/google/fonts/contents/ofl/rocknrollone",
+      "license": "rocknroll-one-OFL.txt",
+      "sha256": {
+        "RocknRollOne-Regular.ttf": "dc0f5ff975851827f63f2c6bfed128ffbca14b6399a10fb5e1711215c0108526"
+      }
+    },
+    {
+      "family": "DotGothic16",
+      "package": "@fontsource/dotgothic16",
+      "category": "ドット",
+      "files": [
+        "DotGothic16-Regular.ttf"
+      ],
+      "source": "https://api.github.com/repos/google/fonts/contents/ofl/dotgothic16",
+      "license": "dotgothic16-OFL.txt",
+      "sha256": {
+        "DotGothic16-Regular.ttf": "3ad9af88726d42b40f7f365f0dcac785af73cf20ea6f1d5b44e57cc21150b8f1"
+      }
+    },
+    {
+      "family": "Orbitron",
+      "package": "@fontsource/orbitron",
+      "category": "近未来",
+      "files": [
+        "Orbitron[wght].ttf"
+      ],
+      "source": "https://api.github.com/repos/google/fonts/contents/ofl/orbitron",
+      "license": "orbitron-OFL.txt",
+      "sha256": {
+        "Orbitron[wght].ttf": "f42db2dd16e642258e35782916eceb1dcdbea06fb958d77ad71dc5963587e8fd"
+      }
+    },
+    {
+      "family": "Manrope",
+      "package": "@fontsource/manrope",
+      "category": "現代的な欧文",
+      "files": [
+        "Manrope[wght].ttf"
+      ],
+      "source": "https://api.github.com/repos/google/fonts/contents/ofl/manrope",
+      "license": "manrope-OFL.txt",
+      "sha256": {
+        "Manrope[wght].ttf": "d0639be45d0af36e798172419d7bd173c4bd4f29e2b76cbb69db1d11bf8b0a40"
+      }
+    },
+    {
+      "family": "Space Grotesk",
+      "package": "@fontsource/space-grotesk",
+      "category": "幾何学的な欧文",
+      "files": [
+        "SpaceGrotesk[wght].ttf"
+      ],
+      "source": "https://api.github.com/repos/google/fonts/contents/ofl/spacegrotesk",
+      "license": "space-grotesk-OFL.txt",
+      "sha256": {
+        "SpaceGrotesk[wght].ttf": "acad6de1fc93436f5c0f1f4137751ef04f1aea3063e7036535970ffcfbd79f72"
+      }
+    },
+    {
+      "family": "Rajdhani",
+      "package": "@fontsource/rajdhani",
+      "category": "角張った欧文",
+      "files": [
+        "Rajdhani-Bold.ttf",
+        "Rajdhani-Regular.ttf",
+        "Rajdhani-SemiBold.ttf"
+      ],
+      "source": "https://api.github.com/repos/google/fonts/contents/ofl/rajdhani",
+      "license": "rajdhani-OFL.txt",
+      "sha256": {
+        "Rajdhani-Bold.ttf": "691470dd3286a14e9677940d0bf75796179841ba5215cbda1a2c8910a3226afd",
+        "Rajdhani-Regular.ttf": "6e1fc228a8318251a6e569502ec57bac1e4656c582f92f59ccecc4688e039b98",
+        "Rajdhani-SemiBold.ttf": "94bbd25a18ca665999feb05a537de9fd2b860dcfb78bbe9ca00270825bf235da"
+      }
+    },
+    {
+      "family": "Barlow Condensed",
+      "package": "@fontsource/barlow-condensed",
+      "category": "幅の狭い欧文",
+      "files": [
+        "BarlowCondensed-Bold.ttf",
+        "BarlowCondensed-ExtraBold.ttf",
+        "BarlowCondensed-Regular.ttf",
+        "BarlowCondensed-SemiBold.ttf"
+      ],
+      "source": "https://api.github.com/repos/google/fonts/contents/ofl/barlowcondensed",
+      "license": "barlow-condensed-OFL.txt",
+      "sha256": {
+        "BarlowCondensed-Bold.ttf": "e476562ec9c1e16cf16475895b511f08c804f438cc9a9f80a44ea50a0eeb5b65",
+        "BarlowCondensed-ExtraBold.ttf": "724c9c25952d5f4a2d87185d9767aa006144c5f0d944dc05bf7d5d603551c260",
+        "BarlowCondensed-Regular.ttf": "583cec5da3b84bc4dc7c9c72e2a565c94d34e431518b19d7e250b7830ad5f996",
+        "BarlowCondensed-SemiBold.ttf": "7b619d14bc2327509a9ef32b0890f709626f7ecc9ff61191c2a4314c5499d2d9"
+      }
+    },
+    {
+      "family": "Bebas Neue",
+      "package": "@fontsource/bebas-neue",
+      "category": "大文字の見出し",
+      "files": [
+        "BebasNeue-Regular.ttf"
+      ],
+      "source": "https://api.github.com/repos/google/fonts/contents/ofl/bebasneue",
+      "license": "bebas-neue-OFL.txt",
+      "sha256": {
+        "BebasNeue-Regular.ttf": "08e4623805102d819f58601e46e345648846075e363b2ceb23313c2d1c83ec73"
+      }
+    },
+    {
+      "family": "Oswald",
+      "package": "@fontsource/oswald",
+      "category": "細身の見出し",
+      "files": [
+        "Oswald[wght].ttf"
+      ],
+      "source": "https://api.github.com/repos/google/fonts/contents/ofl/oswald",
+      "license": "oswald-OFL.txt",
+      "sha256": {
+        "Oswald[wght].ttf": "5b38c246e255a12f5712d640d56bcced0472466fc68983d2d0410ec0457c2817"
+      }
+    },
+    {
+      "family": "Playfair Display",
+      "package": "@fontsource/playfair-display",
+      "category": "欧文のセリフ",
+      "files": [
+        "PlayfairDisplay[wght].ttf"
+      ],
+      "source": "https://api.github.com/repos/google/fonts/contents/ofl/playfairdisplay",
+      "license": "playfair-display-OFL.txt",
+      "sha256": {
+        "PlayfairDisplay[wght].ttf": "c40f2293766a503bc70cce9e512ef844a4ccb7cbcde792fe2ea31d191917d8d6"
+      }
+    },
+    {
+      "family": "Cormorant Garamond",
+      "package": "@fontsource/cormorant-garamond",
+      "category": "優雅なセリフ",
+      "files": [
+        "CormorantGaramond[wght].ttf"
+      ],
+      "source": "https://api.github.com/repos/google/fonts/contents/ofl/cormorantgaramond",
+      "license": "cormorant-garamond-OFL.txt",
+      "sha256": {
+        "CormorantGaramond[wght].ttf": "b20b7d9626dd956b2c5e558692ad328b1f19e3275e2782db4fa07670d83f35e0"
+      }
+    },
+    {
+      "family": "Josefin Sans",
+      "package": "@fontsource/josefin-sans",
+      "category": "幾何学的な細字",
+      "files": [
+        "JosefinSans[wght].ttf"
+      ],
+      "source": "https://api.github.com/repos/google/fonts/contents/ofl/josefinsans",
+      "license": "josefin-sans-OFL.txt",
+      "sha256": {
+        "JosefinSans[wght].ttf": "9255abdb5f393bc51e101abbd07a716a977fd3e15472b1b84b260f426a342bfd"
+      }
+    },
+    {
+      "family": "Caveat",
+      "package": "@fontsource/caveat",
+      "category": "欧文の手書き",
+      "files": [
+        "Caveat[wght].ttf"
+      ],
+      "source": "https://api.github.com/repos/google/fonts/contents/ofl/caveat",
+      "license": "caveat-OFL.txt",
+      "sha256": {
+        "Caveat[wght].ttf": "0bdb6b660482d31531b3945849fba5916b3ef8695da7024a9e6b9ee3c4157988"
+      }
+    },
+    {
+      "family": "Kalam",
+      "package": "@fontsource/kalam",
+      "category": "ペン書き",
+      "files": [
+        "Kalam-Bold.ttf",
+        "Kalam-Regular.ttf"
+      ],
+      "source": "https://api.github.com/repos/google/fonts/contents/ofl/kalam",
+      "license": "kalam-OFL.txt",
+      "sha256": {
+        "Kalam-Bold.ttf": "2f6576601db015d4f6c08678120277fc8510b98c06e932ce7a6a9cbff4cbdded",
+        "Kalam-Regular.ttf": "57cecb63d4608019371954274ae1d8c397764debd5b19d4a33c1efa4dc923c0b"
+      }
+    }
+  ]
+}

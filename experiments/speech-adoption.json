@@ -1,0 +1,22 @@
+{
+  "acceptedAt": "2026-09-07",
+  "feedback": "一番良い。さらに落ち着かせたいときは女声６ みたいな感じだな。",
+  "standard": {
+    "model": "Qwen/Qwen3-TTS-12Hz-1.7B-Base",
+    "revision": "fd4b254389122332181a7c3db7f27e918eec64e3",
+    "referenceAudio": "artifacts/local-speech-bridge/narration.wav",
+    "referenceSha256": "ced7a96822803dfa4fba67f9a26db0f5cb341c7c958a634fb4b47088d6a15a97",
+    "referenceVoice": "Kokoro jf_alpha",
+    "referenceMode": "speaker-embedding-only",
+    "seed": 20260907,
+    "license": "Apache-2.0"
+  },
+  "calm": {
+    "model": "VOICEVOX Nemo",
+    "version": "0.24.0",
+    "speaker": "女声6",
+    "styleId": 10006,
+    "credit": "VOICEVOX Nemo",
+    "terms": "https://voicevox.hiroshiba.jp/nemo/term/"
+  }
+}

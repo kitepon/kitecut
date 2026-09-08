@@ -1,0 +1,136 @@
+diff --git a/packages/ui/src/media/media-library.ts b/packages/ui/src/media/media-library.ts
+index ec86341..98f36ca 100644
+--- a/packages/ui/src/media/media-library.ts
++++ b/packages/ui/src/media/media-library.ts
+@@ -1,7 +1,10 @@
+ import { clipTypeFromFileExtension, serializeGenerationStatus, makeMediaFolder, buildFolderIndex, canMoveFolder, collectFolderCascade, createImportPlaceholderEntry, sniffIsoBmff } from "@frontstage/core";
+ import type { ClipType, MediaFolder, MediaManifest, MediaManifestEntry } from "@frontstage/core";
+ import type { MediaGateway } from "@frontstage/core";
++import { measureAudioLevels } from '@frontstage/core';
++import { createAudioPreview } from './audio-preview.js';
+ import type { MediaByteSource } from "@frontstage/engine";
++import { demuxMp4 } from "@frontstage/engine";
+ import { extensionForImportMime, importTypeForExtension } from "@frontstage/ai";
+ 
+ interface LibrarySnapshot {
+@@ -10,6 +13,19 @@ interface LibrarySnapshot {
+ }
+ 
+ export class MediaLibrary {
++  readonly audioPreview = createAudioPreview(async id => {
++    if (this.entry(id)?.type !== 'audio') throw Error('音声素材を選んでください。');
++    return (await this.byteSource.open(id)).arrayBuffer();
++  });
++  async inspectAudioLevels(id: string) {
++    if (this.entry(id)?.type !== 'audio') throw Error('音声素材を選んでください。');
++    const bytes = await (await this.byteSource.open(id)).arrayBuffer();
++    const context = new AudioContext();
++    try {
++      const decoded = await context.decodeAudioData(bytes);
++      return measureAudioLevels(Array.from({ length: decoded.numberOfChannels }, (_, channel) => decoded.getChannelData(channel)), decoded.sampleRate);
++    } finally { await context.close(); }
++  }
+   // in-memory bytes keyed by relativePath
+   private _bytes = new Map<string, Uint8Array>();
+   // relativePaths whose bytes are persisted (no longer pending)
+@@ -53,6 +69,7 @@ export class MediaLibrary {
+   }
+ 
+   loadManifest(manifest: MediaManifest, gateway: MediaGateway | null): void {
++    this.audioPreview.reset();
+     this._entries = manifest.entries;
+     this._folders = manifest.folders;
+     this._manifestVersion = manifest.version;
+@@ -147,19 +164,20 @@ export class MediaLibrary {
+   }
+ 
+   get byteSource(): MediaByteSource {
+-    return {
+-      open: async (ref: string) => {
++    const readBytes = async (ref: string) => {
+         // ref is a clip's mediaRef = entry id; resolve id → entry → relativePath → bytes
+         const e = this._entries.find((entry) => entry.id === ref);
+         if (!e) throw new Error("media not found: " + ref);
+         if (e.source.kind !== "project") throw new Error("non-project source for: " + ref);
+         const relativePath = e.source.relativePath;
+         const bytes = this._bytes.get(relativePath);
+-        if (bytes) return new Blob([bytes as BlobPart]);
++        if (bytes) return bytes;
+         if (!this._gateway) throw new Error("no gateway and no in-memory bytes for: " + relativePath);
+-        const gatewayBytes = await this._gateway.readMedia(relativePath);
+-        return new Blob([gatewayBytes as BlobPart]);
+-      },
++        return this._gateway.readMedia(relativePath);
++    };
++    return {
++      readBytes,
++      open: async (ref: string) => new Blob([await readBytes(ref) as BlobPart]),
+     };
+   }
+ 
+@@ -326,6 +344,7 @@ export class MediaLibrary {
+   }
+ 
+   private dropAssetBytes(assetIds: ReadonlySet<string>): void {
++    if (assetIds.has(this.audioPreview.state().mediaId)) this.audioPreview.reset();
+     for (const e of this._entries) {
+       if (!assetIds.has(e.id) || e.source.kind !== "project") continue;
+       this._bytes.delete(e.source.relativePath);
+@@ -451,6 +470,8 @@ export interface ProbedMedia {
+ // can be finalized.
+ export async function probeMediaBlob(blob: Blob, type: ClipType): Promise<ProbedMedia> {
+   if (type === "video" || type === "audio") {
++    // 音声トラックの有無はコンテナから読み、映像の存在だけで決めない。
++    const hasAudio = type === "audio" || (await demuxMp4(blob)).audio !== undefined;
+     const result = await withVideoElement(blob, type, async (el) => {
+       const probed = await probeMediaElement(el, type);
+       const thumb = type === "video" ? await captureVideoThumbnail(el, probed.duration) : undefined;
+@@ -460,7 +481,7 @@ export async function probeMediaBlob(blob: Blob, type: ClipType): Promise<Probed
+       duration: result.duration,
+       sourceWidth: result.width,
+       sourceHeight: result.height,
+-      hasAudio: result.hasAudio,
++      hasAudio,
+       thumb: result.thumb,
+     };
+   }
+@@ -494,20 +515,25 @@ async function withVideoElement<T>(
+   }
+ }
+ 
+-function probeMediaElement(el: HTMLVideoElement | HTMLAudioElement, type: "video" | "audio"): Promise<ProbeResult> {
+-  return new Promise((resolve) => {
++export function probeMediaElement(el: HTMLVideoElement | HTMLAudioElement, type: "video" | "audio"): Promise<ProbeResult> {
++  return new Promise((resolve, reject) => {
+     const finish = (result: ProbeResult) => {
+       clearTimeout(timer);
+       resolve(result);
+     };
+ 
+     const timer = setTimeout(() => {
+-      resolve({ duration: 5 });
++      reject(new Error('素材の長さを読み取れませんでした。'));
+     }, 8000);
+ 
+     el.addEventListener("loadedmetadata", () => {
+       const raw = el.duration;
+-      const dur = !isFinite(raw) || isNaN(raw) ? 5 : raw;
++      if (!Number.isFinite(raw) || raw <= 0) {
++        clearTimeout(timer);
++        reject(new Error('素材の再生時間が不正です。'));
++        return;
++      }
++      const dur = raw;
+       if (type === "video") {
+         const vid = el as HTMLVideoElement;
+         finish({
+@@ -522,7 +548,8 @@ function probeMediaElement(el: HTMLVideoElement | HTMLAudioElement, type: "video
+     });
+ 
+     el.addEventListener("error", () => {
+-      finish({ duration: 5 });
++      clearTimeout(timer);
++      reject(new Error(`素材を読み取れませんでした: ${el.error?.message ?? 'この形式を再生できません。'}`));
+     });
+ 
+     el.load();

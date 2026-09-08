@@ -1,0 +1,26 @@
+{
+  "format": "source-with-bootstrap",
+  "codeLicense": "GPL-3.0",
+  "upstream": "experiments/frontstage.json",
+  "speech": "experiments/speech-adoption.json",
+  "videoUnderstanding": "experiments/video-understanding/adoption.json",
+  "fonts": "experiments/fonts/catalog.json",
+  "included": ["改変元の固定ソースと差分", "起動・更新用コード", "利用案内とライセンス原文", "OFL書体", "採用声の生成済み参照音声"],
+  "excluded": ["実演動画と収録素材", "第三者映像と完成CM", "モデル重み", "外部ソフトの実行ファイル", "開発環境と認証情報", "Latticeの実行状態"],
+  "components": [
+    {"name":"Frontstage","kind":"code","license":"GPL-3.0","modified":true,"delivery":"固定ソースと編集差分","source":"https://github.com/x777/frontstage"},
+    {"name":"Electron / Node.js","kind":"runtime","license":"MITほか同梱ライセンス","modified":false,"delivery":"公式パッケージから取得","source":"https://www.electronjs.org/"},
+    {"name":"FFmpeg","kind":"codec","license":"構成に応じてLGPL/GPL","modified":false,"delivery":"公式取得経路を持つ依存パッケージ・wingetから取得","source":"https://ffmpeg.org/legal.html"},
+    {"name":"Inkscape","kind":"runtime","license":"GPL-2.0-or-later","modified":false,"delivery":"wingetから公式配布を取得","source":"https://inkscape.org/about/license/"},
+    {"name":"同梱書体","kind":"font","license":"OFL-1.1","modified":false,"delivery":"元ファイルと各OFL原文","source":"https://github.com/google/fonts"},
+    {"name":"VideoChat3","kind":"model","license":"Apache-2.0","modified":false,"delivery":"採用版をHugging Faceから取得。Windows接続コードは編集差分に含む","source":"https://huggingface.co/MCG-NJU/VideoChat3-4B"},
+    {"name":"Qwen3-TTS","kind":"model","license":"Apache-2.0","modified":false,"delivery":"採用版をHugging Faceから取得","source":"https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-Base"},
+    {"name":"Kokoro jf_alpha由来の参照音声","kind":"generated-audio","license":"生成元Apache-2.0","modified":false,"delivery":"採用時の生成音声をハッシュ固定で同梱","source":"https://huggingface.co/hexgrad/Kokoro-82M"},
+    {"name":"VOICEVOX Nemo","kind":"model-runtime","license":"LGPL-3.0・Nemo利用規約・各依存条件","modified":false,"delivery":"公式エンジンを取得。生成音声はVOICEVOX Nemo表記が必要","source":"https://voicevox.hiroshiba.jp/nemo/term/"},
+    {"name":"ComfyUI","kind":"runtime","license":"GPL-3.0","modified":false,"delivery":"公式Portableを取得または既存の明示設定を利用","source":"https://docs.comfy.org/installation/comfyui_portable_windows"},
+    {"name":"Mage-Flow","kind":"model","license":"MIT","modified":false,"delivery":"Comfy-Org配布を取得。文字エンコーダはQwen3-VL Apache-2.0","source":"https://github.com/microsoft/Mage"},
+    {"name":"Wan2.2 TI2V 5B","kind":"model","license":"Apache-2.0","modified":false,"delivery":"Comfy-Org配布を取得","source":"https://github.com/Wan-Video/Wan2.2"},
+    {"name":"Whisper / SigLIP2 ONNX","kind":"model","license":"Apache-2.0","modified":false,"delivery":"ブラウザ内推論が公式ONNX配布から取得してキャッシュ","source":"https://huggingface.co/onnx-community"},
+    {"name":"OpenCV / PyTorch / Transformers","kind":"runtime","license":"Apache-2.0 / BSD-3-Clause / Apache-2.0","modified":false,"delivery":"公式Pythonパッケージを取得","source":"https://pytorch.org/"}
+  ]
+}
