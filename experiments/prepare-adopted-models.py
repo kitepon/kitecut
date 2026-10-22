@@ -26,15 +26,16 @@ if previous and previous['configuration'] == configuration and all(
     print('採用モデルの配置は記録と一致しています。', flush=True)
     raise SystemExit(0)
 
-api = HfApi()
+# 採用モデルは公開配布なので、端末に残る認証の状態へ依存させない。
+api = HfApi(token=False)
 files = []
 print('採用した動画理解モデルを確認します。', flush=True)
 video_path = Path(snapshot_download(repo_id=video['model']['repository'], revision=video['model']['revision'],
-    local_dir=ROOT / '.work/video-understanding/models/videochat3', max_workers=2))
+    local_dir=ROOT / '.work/video-understanding/models/videochat3', max_workers=2, token=False))
 files.extend(path for path in video_path.rglob('*') if path.is_file() and '.cache' not in path.parts)
 print('採用した標準声モデルを確認します。', flush=True)
 speech_path = Path(snapshot_download(repo_id=speech['standard']['model'], revision=speech['standard']['revision'],
-    cache_dir=ROOT / '.work/qwen-speech/cache/hub', max_workers=2))
+    cache_dir=ROOT / '.work/qwen-speech/cache/hub', max_workers=2, token=False))
 files.extend(path for path in speech_path.rglob('*') if path.is_file())
 reference = ROOT / speech['standard']['referenceAudio']
 if hashlib.sha256(reference.read_bytes()).hexdigest() != speech['standard']['referenceSha256']:
@@ -60,7 +61,7 @@ for model in settings['comfyModels']:
                 raise ValueError('既存モデルが採用版と一致しません。保持して中止: ' + str(destination))
             print('公式モデルを取得: ' + remote, flush=True)
             acquired = Path(hf_hub_download(repo_id=model['repository'], revision=model['revision'], filename=remote,
-                local_dir=ROOT / '.work/distribution/model-downloads' / model['repository'].split('/')[-1]))
+                local_dir=ROOT / '.work/distribution/model-downloads' / model['repository'].split('/')[-1], token=False))
             with acquired.open('rb') as stream:
                 if hashlib.file_digest(stream, 'sha256').hexdigest() != digest:
                     raise ValueError('取得したモデルのハッシュが一致しません: ' + remote)

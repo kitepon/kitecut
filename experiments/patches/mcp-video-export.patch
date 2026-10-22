@@ -1029,10 +1029,9 @@ index 0000000..84ea40e
 +module.exports = { createVideoSearch };
 diff --git a/apps/desktop/src/main/video-search.py b/apps/desktop/src/main/video-search.py
 new file mode 100644
-index 0000000..e3994e0
 --- /dev/null
 +++ b/apps/desktop/src/main/video-search.py
-@@ -0,0 +1,102 @@
+@@ -0,0 +1,124 @@
 +"""採用済みVideoChat3で素材内の指定場面を探す。時刻は元動画の秒。"""
 +import contextlib
 +import json
@@ -1055,13 +1054,35 @@ index 0000000..e3994e0
 +    return {'segments': value}
 +
 +
++
++def build_json_prefix(tokenizer, schema, prompt_length):
++    """複数トークンから復元したUnicode文字もJSONの文字集合へ反映する。"""
++    from lmformatenforcer import JsonSchemaParser
++    from lmformatenforcer.integrations.transformers import build_transformers_prefix_allowed_tokens_fn
++    prefix = build_transformers_prefix_allowed_tokens_fn(tokenizer, JsonSchemaParser(schema))
++    parser = prefix.token_enforcer.root_parser
++    alphabet = set(parser.config.alphabet)
++
++    def allowed_tokens(batch_id, sent):
++        text = tokenizer.decode(sent[prompt_length:].tolist(), skip_special_tokens=True,
++            clean_up_tokenization_spaces=False)
++        # JSONでエスケープが必要な制御文字は追加しない。
++        missing = {character for character in text if ord(character) >= 0x20} - alphabet
++        if missing:
++            alphabet.update(missing)
++            parser.config.alphabet += ''.join(sorted(missing))
++            parser.context.alphabet_without_quotes = parser.config.alphabet.replace('"', '')
++            prefix.token_enforcer.allowed_token_cache.clear()
++        return prefix(batch_id, sent)
++
++    return allowed_tokens
++
++
 +def search(request):
 +    import torch
 +    from torch.nn.attention import SDPBackend, sdpa_kernel
 +    from transformers import AutoConfig, AutoModelForCausalLM, AutoProcessor, TextStreamer, LogitsProcessor, LogitsProcessorList
 +    from qwen_vl_utils import process_vision_info
-+    from lmformatenforcer import JsonSchemaParser
-+    from lmformatenforcer.integrations.transformers import build_transformers_prefix_allowed_tokens_fn
 +    config = request['runtime']
 +    start = time.perf_counter()
 +    model_path = config['modelPath']
@@ -1099,7 +1120,7 @@ index 0000000..e3994e0
 +    videos, metadata = zip(*videos)
 +    inputs = processor(text=text, images=images, videos=list(videos), video_metadata=list(metadata),
 +        do_resize=False, return_tensors='pt', **(kwargs or {})).to(model.device).to(model.dtype)
-+    prefix = build_transformers_prefix_allowed_tokens_fn(processor.tokenizer, JsonSchemaParser(schema))
++    prefix = build_json_prefix(processor.tokenizer, schema, inputs.input_ids.shape[1])
 +    class PresencePenalty(LogitsProcessor):
 +        # 研究で実測した設定。生成済みtokenを一度だけ減点して回答の反復を抑える。
 +        def __call__(self, input_ids, scores):

@@ -42,6 +42,8 @@ try {
   page.on('pageerror', error => console.error('編集画面のエラー:', error.message));
   page.on('console', message => { if (message.type() === 'error') console.error('編集画面:', message.text()); });
   await page.waitForFunction(() => document.querySelector('#root')?.childElementCount > 0, undefined, { timeout: 30000 });
+  // この起動入口が使う認証付きローカルAPIを、アプリの設定経由で有効にする。
+  await page.evaluate(() => window.desktopMcp.setEnabled(true));
   const token = (await readFile(path.join(profile, 'mcp-token'), 'utf8')).trim();
   const headers = { Authorization: `Bearer ${token}` };
   if (!(await fetch('http://127.0.0.1:19790/healthz', { headers })).ok) throw new Error('編集アプリのMCP状態確認に失敗した');
