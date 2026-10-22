@@ -33,6 +33,7 @@ await mkdir(path.join(root, '.work'), { recursive: true });
 const restored = await mkdtemp(path.join(root, '.work/source-check-'));
 run('git', ['bundle', 'verify', 'distribution/frontstage.bundle']);
 run('git', ['clone', '--quiet', '--no-checkout', path.join(root, 'distribution/frontstage.bundle'), restored]);
+run('git', ['fsck', '--connectivity-only', '--no-dangling'], restored);
 run('git', ['-c', 'core.autocrlf=false', 'checkout', '--quiet', '--detach', adopted.revision], restored);
 for (const patch of adopted.patches) {
   run('git', ['apply', '--check', '--', path.join(root, patch)], restored);
