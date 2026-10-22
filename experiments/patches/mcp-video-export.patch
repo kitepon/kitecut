@@ -9334,7 +9334,6 @@ index 977b6d9..d788089 100644
  
    reset(): void {
 diff --git a/packages/engine/src/audio/audio-mixer.ts b/packages/engine/src/audio/audio-mixer.ts
-index d74fed5..3383a9a 100644
 --- a/packages/engine/src/audio/audio-mixer.ts
 +++ b/packages/engine/src/audio/audio-mixer.ts
 @@ -1,8 +1,9 @@
@@ -9348,7 +9347,7 @@ index d74fed5..3383a9a 100644
  import type { AudioGraph } from "./audio-graph.js";
  import { mixWindow, type MixSource } from "./mix.js";
  
-@@ -47,15 +48,14 @@ export class AudioMixer {
+@@ -47,15 +48,14 @@
        if (demuxCache.has(clip.mediaRef) || failedRefs.has(clip.mediaRef)) continue;
        let bytes: ArrayBuffer;
        try {
@@ -9366,10 +9365,17 @@ index d74fed5..3383a9a 100644
          demuxCache.set(clip.mediaRef, { bytes, audio: demux.audio });
        } catch {
          // mp3/wav/… aren't ISO-BMFF — the WebAudio fallback below decodes those containers.
-@@ -79,14 +79,10 @@ export class AudioMixer {
-         continue; // unsupported codec — skip silently
-       }
- 
+@@ -72,21 +72,13 @@
+       if (!entry.audio) continue;
+       const { bytes, audio } = entry;
+       const chunks = buildAudioChunks(audio, bytes);
+-      let manager: AudioDecodeManager;
+-      try {
+-        manager = await AudioDecodeManager.create(audio, chunks);
+-      } catch {
+-        continue; // unsupported codec — skip silently
+-      }
+-
 -      const pcmParts: Float32Array[] = [];
 -      await manager.decodeAll((pcm) => { pcmParts.push(pcm.data); });
 -
@@ -9378,6 +9384,9 @@ index d74fed5..3383a9a 100644
 -      const pcm = new Float32Array(totalLen);
 -      let off = 0;
 -      for (const part of pcmParts) { pcm.set(part, off); off += part.length; }
++      // 復号不能な音声を無音に置き換えて書出し成功としない。
++      const manager = await AudioDecodeManager.create(audio, chunks);
++
 +      const pcmParts: PcmChunk[] = [];
 +      await manager.decodeAll((pcm) => { pcmParts.push(pcm); });
 +      const pcm=assembleAudioPcm(pcmParts,audio.sampleRate,audio.channels,audio.presentationDurationUs);
@@ -9385,7 +9394,7 @@ index d74fed5..3383a9a 100644
  
        decoded.set(ref, { pcm, channels: audio.channels, sampleRate: audio.sampleRate });
        if (outChannels === undefined) { outChannels = audio.channels; outSampleRate = audio.sampleRate; }
-@@ -164,7 +160,8 @@ export class AudioMixer {
+@@ -164,7 +156,8 @@
        return plan.clips.find((c) => c.clipId === clipId)?.gain ?? 0;
      };
  
@@ -9395,14 +9404,15 @@ index d74fed5..3383a9a 100644
  
      let peak = 0;
      for (let i = 0; i < mixed.length; i++) {
-@@ -172,9 +169,9 @@ export class AudioMixer {
+@@ -172,9 +165,9 @@
        if (v > peak) peak = v;
      }
      this.__lastPeak = Math.max(this.__lastPeak, peak);
 -    this.__mixFed += CHUNK;
-+    this.__mixFed += frames;
- 
+-
 -    this.cursor += CHUNK;
++    this.__mixFed += frames;
++
 +    this.cursor += frames;
      return mixed;
    }
@@ -9854,10 +9864,9 @@ index ced905a..851c872 100644
      for (const f of this.collected) { try { f.close(); this.open--; } catch { /* already closed */ } }
      this.collected = [];
 diff --git a/packages/engine/src/demux/mp4-demuxer.ts b/packages/engine/src/demux/mp4-demuxer.ts
-index 1b748ac..f49ab03 100644
 --- a/packages/engine/src/demux/mp4-demuxer.ts
 +++ b/packages/engine/src/demux/mp4-demuxer.ts
-@@ -19,6 +19,7 @@ export interface DemuxedTrack {
+@@ -19,6 +19,7 @@
  }
  
  export interface DemuxedAudioTrack {
@@ -9865,27 +9874,69 @@ index 1b748ac..f49ab03 100644
    codec: string;
    sampleRate: number;
    channels: number;
-@@ -34,6 +35,14 @@ export interface DemuxResult {
+@@ -33,6 +34,55 @@
+ }
  
  const toMicros = (ts: number, timescale: number): number => Math.round((ts / timescale) * 1_000_000);
- 
-+export function trackEditTiming(entries: {media_time:number;segment_duration:number;media_rate_integer:number;media_rate_fraction:number}[]|undefined,trackScale:number,movieScale:number) {
++
++export function trackEditTiming(entries: {media_time:number;segment_duration:number;media_rate_integer:number;media_rate_fraction:number}[]|undefined,trackScale:number,movieScale:number,allowLeadingSilence=false) {
 +  if(!entries?.length)return {offsetSeconds:0,durationUs:undefined};
-+  const e=entries[0]!;
-+  if(entries.length!==1 || e.media_time<0 || e.media_rate_integer!==1 || e.media_rate_fraction!==0)
-+    throw Error('このMP4の複数区間・空区間・変速の編集リストには未対応です。');
-+  return {offsetSeconds:-e.media_time/trackScale,durationUs:e.segment_duration>0?toMicros(e.segment_duration,movieScale):undefined};
++  let leadingDuration=0;
++  let media:typeof entries[number]|undefined;
++  for(const entry of entries){
++    if(entry.media_rate_integer!==1 || entry.media_rate_fraction!==0)
++      throw Error('このMP4の変速の編集リストには未対応です。');
++    if(entry.media_time===-1 && !media && allowLeadingSilence)leadingDuration+=entry.segment_duration;
++    else if(entry.media_time>=0 && !media)media=entry;
++    else throw Error('このMP4の複数の映像・音声区間や途中の空区間には未対応です。');
++  }
++  if(!media)throw Error('このMP4の編集リストに再生する映像・音声区間がありません。');
++  // QuickTimeの先頭空区間は無音・無映像の時間として原点へ加える。
++  return {offsetSeconds:leadingDuration/movieScale-media.media_time/trackScale,
++    durationUs:media.segment_duration>0?toMicros(leadingDuration+media.segment_duration,movieScale):undefined};
 +}
 +
++export function quickTimeAudioConfig(bytes:ArrayBuffer,start:number,size:number) {
++  const view=new DataView(bytes,start,size);
++  const version=view.getUint16(16);
++  if(version===0)return undefined;
++  if(version!==1)throw Error('このQuickTime音声サンプルの版には未対応です。');
++  // SoundDescription v1は共通36バイトの後に16バイトの拡張を持つ。
++  function findEsds(begin:number,end:number):ReturnType<typeof MP4Box.BoxParser.parseOneBox>['box']|undefined {
++    for(let offset=begin;offset<end;){
++      if(offset+8>end)throw Error('QuickTime音声の子ボックスのヘッダーが不完全です。');
++      const length=view.getUint32(offset);
++      if(length<8 || offset+length>end)throw Error('QuickTime音声の子ボックスの長さが不正です。');
++      const type=String.fromCharCode(...new Uint8Array(bytes,start+offset+4,4));
++      if(type==='esds'){
++        const stream=new MP4Box.MP4BoxStream(bytes.slice(start+offset,start+offset+length));
++        const parsed=MP4Box.BoxParser.parseOneBox(stream).box;
++        if(!parsed?.esd)throw Error('QuickTime音声のAAC設定を解析できません。');
++        return parsed;
++      }
++      if(type==='wave'){
++        const found=findEsds(offset+8,offset+length);
++        if(found)return found;
++      }
++      offset+=length;
++    }
++    return undefined;
++  }
++  const esd=findEsds(52,size)?.esd;
++  const description=esd?.descs?.[0]?.descs?.[0]?.data;
++  if(!esd || !description)throw Error('QuickTime音声のAAC設定がありません。');
++  return {codec:`mp4a.${esd.getOTI().toString(16)}.${esd.getAudioConfig()}`,description};
++}
+ 
  function esdsDescription(file: ReturnType<typeof MP4Box.createFile>, trackId: number): Uint8Array | undefined {
    const trak = file.getTrackById(trackId);
-   const entry = trak?.mdia?.minf?.stbl?.stsd?.entries?.[0];
-@@ -54,21 +63,25 @@ function avccDescription(file: ReturnType<typeof MP4Box.createFile>, trackId: nu
+@@ -54,21 +104,26 @@
    return new Uint8Array(stream.buffer, 8); // strip 8-byte box header (size + type)
  }
  
 -export async function demuxMp4(blob: Blob): Promise<DemuxResult> {
 +export async function demuxMp4(blob: Blob | ArrayBuffer): Promise<DemuxResult> {
++  const fileBytes=blob instanceof ArrayBuffer?blob:await blob.arrayBuffer();
    const file = MP4Box.createFile();
    const result: DemuxResult = {};
    const videoSamples: DemuxedSample[] = [];
@@ -9907,19 +9958,26 @@ index 1b748ac..f49ab03 100644
          videoTimescale = v.timescale;
          result.video = {
            codec: v.codec,
-@@ -81,8 +94,11 @@ export async function demuxMp4(blob: Blob): Promise<DemuxResult> {
+@@ -81,27 +136,34 @@
          file.setExtractionOptions(v.id, "video", { nbSamples: Number.MAX_SAFE_INTEGER });
        }
        if (a) {
-+        const timing=trackEditTiming(file.getTrackById(a.id)?.edts?.elst?.entries,a.timescale,info.timescale);
++        const timing=trackEditTiming(file.getTrackById(a.id)?.edts?.elst?.entries,a.timescale,info.timescale,true);
 +        audioOffsetSeconds=timing.offsetSeconds;
          audioTimescale = a.timescale;
++        const entry=file.getTrackById(a.id)?.mdia.minf.stbl.stsd.entries[0];
++        const quickTime=entry?.type==='mp4a' && !entry.esds?quickTimeAudioConfig(fileBytes,entry.start,entry.size):undefined;
          result.audio = {
+-          codec: a.codec,
 +          presentationDurationUs:timing.durationUs,
-           codec: a.codec,
++          codec: quickTime?.codec ?? a.codec,
            sampleRate: a.audio.sample_rate,
            channels: a.audio.channel_count,
-@@ -93,15 +109,17 @@ export async function demuxMp4(blob: Blob): Promise<DemuxResult> {
+           timescale: a.timescale,
+           samples: audioSamples,
+-          description: esdsDescription(file, a.id),
++          description: quickTime?.description ?? esdsDescription(file, a.id),
+         };
          file.setExtractionOptions(a.id, "audio", { nbSamples: Number.MAX_SAFE_INTEGER });
        }
        file.start();
@@ -9939,20 +9997,19 @@ index 1b748ac..f49ab03 100644
            durationTicks: s.duration,
            isSync: s.is_sync,
            byteOffset: s.offset,
-@@ -110,7 +128,7 @@ export async function demuxMp4(blob: Blob): Promise<DemuxResult> {
+@@ -110,7 +172,7 @@
        }
      };
  
 -    blob.arrayBuffer().then((ab) => {
-+    (blob instanceof ArrayBuffer ? Promise.resolve(blob) : blob.arrayBuffer()).then((ab) => {
++    Promise.resolve(fileBytes).then((ab) => {
        const buf = ab as MP4ArrayBuffer;
        buf.fileStart = 0;
        file.appendBuffer(buf);
 diff --git a/packages/engine/src/demux/mp4box.d.ts b/packages/engine/src/demux/mp4box.d.ts
-index 05c3e3a..284d77b 100644
 --- a/packages/engine/src/demux/mp4box.d.ts
 +++ b/packages/engine/src/demux/mp4box.d.ts
-@@ -18,6 +18,7 @@ declare module "mp4box" {
+@@ -18,6 +18,7 @@
    }
  
    export interface MP4Info {
@@ -9960,7 +10017,24 @@ index 05c3e3a..284d77b 100644
      videoTracks: MP4VideoTrack[];
      audioTracks: MP4AudioTrack[];
    }
-@@ -61,6 +62,7 @@ declare module "mp4box" {
+@@ -47,6 +48,8 @@
+   }
+ 
+   export interface EsDescriptor {
++    getOTI():number;
++    getAudioConfig():number;
+     tag: number;
+     descs: DecoderConfigDescriptor[];
+   }
+@@ -56,11 +59,15 @@
+   }
+ 
+   export interface SampleEntry {
++    type:string;
++    start:number;
++    size:number;
+     avcC?: AvcCBox;
+     esds?: EsdsBox;
    }
  
    export interface MP4Trak {
@@ -9968,6 +10042,15 @@ index 05c3e3a..284d77b 100644
      mdia: {
        minf: {
          stbl: {
+@@ -95,6 +102,8 @@
+ 
+   const MP4Box: {
+     createFile(): MP4File;
++    MP4BoxStream: new(buffer:ArrayBuffer)=>object;
++    BoxParser:{parseOneBox(stream:object):{box?:EsdsBox}};
+     DataStream: DataStreamConstructor;
+   };
+   export default MP4Box;
 diff --git a/packages/engine/src/export/export-mp4.ts b/packages/engine/src/export/export-mp4.ts
 index fe99e63..b8b4d01 100644
 --- a/packages/engine/src/export/export-mp4.ts
@@ -10986,18 +11069,18 @@ index 0000000..d17dea5
 + expect(ctx.state).toBe('running');
 +});
 diff --git a/packages/engine/test/audio-mixer.test.ts b/packages/engine/test/audio-mixer.test.ts
-index ca84af9..72d47e7 100644
 --- a/packages/engine/test/audio-mixer.test.ts
 +++ b/packages/engine/test/audio-mixer.test.ts
-@@ -3,6 +3,7 @@ import type { Clip } from "@frontstage/core";
+@@ -3,6 +3,8 @@
  import type { Timeline, Track } from "@frontstage/core";
  import type { MediaByteSource } from "../src/media/media-source.js";
  import { audioMixClips, AudioMixer } from "../src/audio/audio-mixer.js";
 +import { demuxMp4 } from '../src/demux/mp4-demuxer.js';
++import { AudioDecodeManager } from '../src/decode/audio-decoder.js';
  
  // AudioMixer.create() demuxes + decodes real audio via WebCodecs' AudioDecoder, which doesn't
  // exist in Node. Stub the demux/decode boundary (same approach source-coordinator.test.ts uses
-@@ -16,12 +17,13 @@ vi.mock("../src/demux/mp4-demuxer.js", () => ({
+@@ -16,12 +18,13 @@
      },
    })),
  }));
@@ -11014,10 +11097,18 @@ index ca84af9..72d47e7 100644
        },
      })),
    },
-@@ -79,6 +81,30 @@ describe("AudioMixer.create missing-media tolerance", () => {
-     warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-   });
+@@ -77,6 +80,36 @@
  
+   beforeEach(() => {
+     warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
++  });
++
++  it('復号不能な音声を黙って落とさず失敗を返す',async()=>{
++    vi.mocked(AudioDecodeManager.create).mockRejectedValueOnce(new Error('EngineUnsupported: audio codec mp4a'));
++    await expect(AudioMixer.create(timeline([track('a','audio',[clip('c','audio')])]),makeMedia(new Set(['m']))))
++      .rejects.toThrow('EngineUnsupported: audio codec mp4a');
++  });
++
 +  it('音声解析へ素材のバッファを直接渡す',async()=>{
 +    const bytes=new Uint8Array([1,2,3,4]),open=vi.fn();
 +    const mixer=await AudioMixer.create(timeline([track('a','audio',[clip('c','audio')])]),{open,readBytes:async()=>bytes});
@@ -11040,11 +11131,9 @@ index ca84af9..72d47e7 100644
 +    mixer.reset(179,tl.fps);
 +    expect(collect()).toEqual([1600]);
 +    mixer.dispose();
-+  });
-+
+   });
+ 
    it("skips a clip whose media.open rejects and mixes the rest", async () => {
-     const tl = timeline([
-       track("a", "audio", [
 diff --git a/packages/engine/test/beat-detection.test.ts b/packages/engine/test/beat-detection.test.ts
 new file mode 100644
 index 0000000..a908c92
@@ -11305,15 +11394,14 @@ index 5a7d786..b7e15a4 100644
    const out = mixWindow([src(0.6, 100), src(0.6, 100)], 0, 10, 100, 30, () => 1);
    expect(out[0]).toBeCloseTo(1.0); // 0.6+0.6 = 1.2 → clamped to 1
 diff --git a/packages/engine/test/mp4-demuxer.test.ts b/packages/engine/test/mp4-demuxer.test.ts
-index 12839cd..76c57ed 100644
 --- a/packages/engine/test/mp4-demuxer.test.ts
 +++ b/packages/engine/test/mp4-demuxer.test.ts
-@@ -1,12 +1,33 @@
+@@ -1,12 +1,53 @@
  import { readFileSync } from "node:fs";
  import { fileURLToPath } from "node:url";
  import { describe, expect, test } from "vitest";
 -import { demuxMp4 } from "../src/demux/mp4-demuxer.js";
-+import { demuxMp4, trackEditTiming } from "../src/demux/mp4-demuxer.js";
++import { demuxMp4, trackEditTiming, quickTimeAudioConfig } from "../src/demux/mp4-demuxer.js";
 +import {assembleAudioPcm} from '../src/decode/audio-decoder.js';
 +
 +test('編集リストの開始位置を各トラックの時刻単位で扱う',()=>{
@@ -11323,6 +11411,26 @@ index 12839cd..76c57ed 100644
 + expect(trackEditTiming(undefined,48000,1000).offsetSeconds).toBe(0);
 + expect(()=>trackEditTiming([...entries,...entries],48000,1000)).toThrow('未対応');
 +});
++test('QuickTimeの先頭空区間を音声の開始遅延と再生尺へ反映する',()=>{
++ const empty={media_time:-1,segment_duration:13819,media_rate_integer:1,media_rate_fraction:0};
++ const media={media_time:0,segment_duration:17531698,media_rate_integer:1,media_rate_fraction:0};
++ expect(trackEditTiming([empty,media],48000,100000,true)).toEqual({offsetSeconds:0.13819,durationUs:175455170});
++ expect(trackEditTiming([empty,empty,{...media,media_time:1024}],48000,100000,true).offsetSeconds).toBeCloseTo(0.27638-1024/48000);
++ expect(()=>trackEditTiming([media,empty],48000,100000,true)).toThrow('未対応');
++ expect(()=>trackEditTiming([empty,media],48000,100000)).toThrow('未対応');
++ expect(()=>trackEditTiming([{...media,media_rate_integer:2}],48000,100000)).toThrow('未対応');
++});
++
++test('QuickTime v1のwave内AAC設定と正しいcodec名を取得する',()=>{
++ const bytes=Buffer.from('0000008f6d7034610000000000000001000100000000000000010010fffe0000bb800000000004000000000200000002000000020000005b776176650000000c66726d616d7034610000000c6d703461000000000000003365736473000000000380808022000000048080801440140018000003e8000003e800058080800211880680808001020000000800000000','hex');
++ const buffer=bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength);
++ const config=quickTimeAudioConfig(buffer,0,bytes.length)!;
++ expect(config.codec).toBe('mp4a.40.2');
++ expect(Array.from(config.description)).toEqual([17,136]);
++ new DataView(buffer).setUint16(16,2);
++ expect(()=>quickTimeAudioConfig(buffer,0,bytes.length)).toThrow('未対応');
++});
++
 +test('PCMを時刻に配置し先頭の符号化余白と末尾を切り空白を維持する',()=>{
 + const c=(timestampUs:number,values:number[])=>({timestampUs,sampleRate:1000,channels:1,data:new Float32Array(values)});
 + expect(Array.from(assembleAudioPcm([c(-2000,[9,9,1,2]),c(4000,[3,4,9])],1000,1,6000))).toEqual([1,2,0,0,3,4]);
