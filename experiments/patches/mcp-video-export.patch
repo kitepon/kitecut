@@ -9762,10 +9762,9 @@ index eec3f87..c3e0192 100644
        await decoder.flush();
      } catch {
 diff --git a/packages/engine/src/decode/video-decoder.ts b/packages/engine/src/decode/video-decoder.ts
-index ced905a..851c872 100644
 --- a/packages/engine/src/decode/video-decoder.ts
 +++ b/packages/engine/src/decode/video-decoder.ts
-@@ -19,6 +19,7 @@ export class VideoDecodeManager {
+@@ -19,6 +19,7 @@
    private decoder!: VideoDecoder;
    private open = 0;
    private keyframes: KeyframeEntry[] = [];
@@ -9773,16 +9772,17 @@ index ced905a..851c872 100644
    private err: EngineDecodeError | null = null;
    private collected: VideoFrame[] = [];
    private scrubTargetUs = 0;
-@@ -27,6 +28,8 @@ export class VideoDecodeManager {
+@@ -27,6 +28,9 @@
    private mode: "scrub" | "pump" = "scrub";
    private buffer: VideoFrame[] = [];
    private cursor = 0;
 +  private sequentialTarget: number | undefined;
 +  private sequentialDrained = false;
++  private sequentialFlush: Promise<void> | undefined;
    private static AHEAD_MICROS = 500_000;
    private static QUEUE_LIMIT = 8;
  
-@@ -38,6 +41,7 @@ export class VideoDecodeManager {
+@@ -38,6 +42,7 @@
        .map((c, i) => ({ c, i }))
        .filter(({ c }) => c.type === "key")
        .map(({ c, i }) => ({ chunkIndex: i, micros: c.timestamp }));
@@ -9790,16 +9790,17 @@ index ced905a..851c872 100644
      const config: VideoDecoderConfig = {
        codec: track.codec,
        codedWidth: track.codedWidth,
-@@ -80,6 +84,8 @@ export class VideoDecodeManager {
+@@ -80,6 +85,9 @@
    closeFrame(frame: VideoFrame): void { frame.close(); this.open--; }
  
    async seekTo(targetUs: number): Promise<void> {
 +    this.sequentialTarget = undefined;
 +    this.sequentialDrained = false;
++    this.sequentialFlush = undefined;
      this.mode = "pump";
      // Release held frames BEFORE flush — a saturated decoder output pool makes flush() hang.
      for (const f of this.buffer) { f.close(); this.open--; }
-@@ -171,6 +177,7 @@ export class VideoDecodeManager {
+@@ -171,6 +179,7 @@
    }
  
    async frameAtMicros(targetUs: number): Promise<VideoFrame> {
@@ -9807,7 +9808,7 @@ index ced905a..851c872 100644
      this.mode = "scrub";
      this.scrubTargetUs = targetUs;
      this.err = null;
-@@ -181,9 +188,16 @@ export class VideoDecodeManager {
+@@ -181,9 +190,16 @@
      for (const f of this.buffer) { f.close(); this.open--; }
      this.buffer = [];
      const startIdx = this.keyframeIndexBefore(targetUs);
@@ -9826,7 +9827,7 @@ index ced905a..851c872 100644
      }
      await this.decoder.flush();
      const capturedErr = this.err as EngineDecodeError | null;
-@@ -218,6 +232,36 @@ export class VideoDecodeManager {
+@@ -218,6 +234,48 @@
      return best; // decoder stays alive → frame GPU-backed → directly importable
    }
  
@@ -9842,13 +9843,25 @@ index ced905a..851c872 100644
 +      this.frameForMicros(targetUs);
 +      if (this.buffer.length && this.buffer[this.buffer.length - 1]!.timestamp >= targetUs) break;
 +      if (this.cursor >= this.chunks.length) {
-+        if (!this.sequentialDrained) {
-+          await this.decoder.flush();
-+          this.sequentialDrained = true;
++        if (!this.sequentialFlush) {
++          // A tail flush can fill the decoder's finite output-surface pool.
++          // Keep consuming frames while it drains instead of awaiting the
++          // whole group with its output frames retained in this.buffer.
++          this.sequentialFlush = this.decoder.flush().then(
++            () => { this.sequentialDrained = true; },
++            error => {
++              this.err = { message: error instanceof Error ? error.message : String(error) };
++              this.sequentialDrained = true;
++            },
++          );
 +        }
-+        const error = this.lastError();
-+        if (error) throw new Error("EngineDecode: " + error.message);
-+        break;
++        if (this.sequentialDrained) {
++          const error = this.lastError();
++          if (error) throw new Error("EngineDecode: " + error.message);
++          break;
++        }
++        await new Promise<void>(resolve => setTimeout(resolve, 0));
++        continue;
 +      }
 +      this.pump();
 +      await new Promise<void>(resolve => setTimeout(resolve, 0));
@@ -15616,3 +15629,96 @@ index 41ab8b1..d1f9f74 100644
    yocto-queue@0.1.0: {}
  
    youch-core@0.3.3:
+diff --git a/packages/engine/test/decode-tail-backpressure.test.ts b/packages/engine/test/decode-tail-backpressure.test.ts
+new file mode 100644
+--- /dev/null
++++ b/packages/engine/test/decode-tail-backpressure.test.ts
+@@ -0,0 +1,88 @@
++import { afterEach, expect, test, vi } from 'vitest';
++import { VideoDecodeManager } from '../src/decode/video-decoder.js';
++import type { DemuxedTrack } from '../src/demux/mp4-demuxer.js';
++
++// A hardware decoder may retain the final reorder group until flush. Its finite
++// output pool cannot finish that flush while the consumer holds every surface.
++class PooledTailDecoder {
++  static async isConfigSupported() { return { supported: true }; }
++  state = 'configured';
++  decodeQueueSize = 0;
++  private queued: number[] = [];
++  private surfaces = 0;
++  private drain?: () => void;
++  private finish?: () => void;
++  constructor(private callbacks: { output: (frame: unknown) => void }) {}
++  configure() {}
++  decode(chunk: { timestamp: number }) { this.queued.push(chunk.timestamp); }
++  flush(): Promise<void> {
++    return new Promise(resolve => {
++      this.finish = resolve;
++      this.drain = () => {
++        while (this.state !== 'closed' && this.surfaces < 2 && this.queued.length) {
++          const timestamp = this.queued.shift()!;
++          this.surfaces++;
++          let references = 1;
++          const makeFrame = (): unknown => {
++            let closed = false;
++            return { timestamp,
++              clone: () => { references++; return makeFrame(); },
++              close: () => {
++                if (closed) return;
++                closed = true;
++                if (--references === 0) { this.surfaces--; queueMicrotask(() => this.drain?.()); }
++              },
++            };
++          };
++          this.callbacks.output(makeFrame());
++        }
++        if (!this.queued.length) { this.finish?.(); this.finish = undefined; }
++      };
++      this.drain();
++    });
++  }
++  close() { this.state = 'closed'; this.finish?.(); this.finish = undefined; }
++}
++afterEach(() => vi.unstubAllGlobals());
++
++test('drains the final reorder group while consuming frames without exhausting decoder surfaces', async () => {
++  vi.stubGlobal('VideoDecoder', PooledTailDecoder);
++  const chunks = Array.from({length: 8}, (_, timestamp) => ({timestamp, type: timestamp === 0 ? 'key' : 'delta'})) as EncodedVideoChunk[];
++  const track = {codec: 'avc1.64001f', codedWidth: 16, codedHeight: 16} as DemuxedTrack;
++  const manager = await VideoDecodeManager.create(track, chunks);
++  let timer: ReturnType<typeof setTimeout>;
++  try {
++    await Promise.race([
++      (async () => {
++        for (let target = 0; target <= chunks.length; target++) {
++          const frame = await manager.frameAtMicrosSequential(target);
++          expect(frame.timestamp).toBe(Math.min(target, chunks.length - 1));
++          manager.closeFrame(frame);
++        }
++      })(),
++      new Promise<never>((_, reject) => { timer = setTimeout(() => reject(Error('decoder tail flush stalled with its output surfaces held')), 300); }),
++    ]);
++  } finally {
++    clearTimeout(timer!);
++    manager.dispose();
++  }
++  expect(manager.openFrameCount()).toBe(0);
++});
++
++
++test('reports a rejected tail flush instead of leaving the sequential read pending', async () => {
++  class FailingDecoder {
++    static async isConfigSupported() { return { supported: true }; }
++    state = 'configured'; decodeQueueSize = 0; queued = 0;
++    configure() {}
++    decode() { this.queued++; }
++    async flush() { if (this.queued) throw Error('tail decode failed'); }
++    close() { this.state = 'closed'; }
++  }
++  vi.stubGlobal('VideoDecoder', FailingDecoder);
++  const track = {codec: 'avc1.64001f', codedWidth: 16, codedHeight: 16} as DemuxedTrack;
++  const manager = await VideoDecodeManager.create(track, [{timestamp: 0, type: 'key'}] as EncodedVideoChunk[]);
++  try { await expect(manager.frameAtMicrosSequential(0)).rejects.toThrow('EngineDecode: tail decode failed'); }
++  finally { manager.dispose(); }
++  expect(manager.openFrameCount()).toBe(0);
++});
